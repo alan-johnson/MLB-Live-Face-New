@@ -1,10 +1,10 @@
 {
-    "author": "Chris Schlitt",
+    "author": "Alan Johnson",
     "dependencies": {
         "@rebble/clay": "^1.0.8"
     },
     "keywords": [],
-    "name": "mlb-live-face",
+    "name": "mlb-live-face2",
     "pebble": {
         "capabilities": [
             "configurable"
@@ -961,10 +961,13 @@
             "emery",
             "gabbro"
         ],
-        "uuid": "3ae16b33-47d1-4479-8f41-b5face25f3ca",
+        "uuid": "61B17197-107D-4317-AA59-D8B15BAC2FBA",
         "watchapp": {
             "watchface": true
         }
     },
-    "version": "4.0.0"
+    "version": "4.0.0",
+    "_original_author": "Chris Schlitt",
+    "_original_uuid": "3ae16b33-47d1-4479-8f41-b5face25f3ca",
+    "_original_name": "mlb-live-face2"
 }
