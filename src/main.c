@@ -314,14 +314,18 @@ static void startGame(){
   sliding_text_layer_animate_down(s_home_data_layer);
   // Animate Inning
   sliding_text_layer_set_font(s_inning_layer, s_font_phillies_22);
-  #ifdef PBL_RECT 
-  if(userSettings.bases_display == 1) {
+  #if defined(PBL_PLATFORM_EMERY)
+    snprintf(inning, sizeof(inning), " %d", currentGameData.inning);
+  #else
+    #ifdef PBL_RECT
+    if(userSettings.bases_display == 1) {
+      #endif
+      snprintf(inning, sizeof(inning), "      %d", currentGameData.inning);
+      #ifdef PBL_RECT
+    } else if(userSettings.bases_display == 2) {
+      snprintf(inning, sizeof(inning), "%d", currentGameData.inning);
+    }
     #endif
-    snprintf(inning, sizeof(inning), "      %d", currentGameData.inning);
-    #ifdef PBL_RECT 
-  } else if(userSettings.bases_display == 2) {
-    snprintf(inning, sizeof(inning), "%d", currentGameData.inning);
-  }
   #endif
   sliding_text_layer_set_next_text(s_inning_layer, inning);
   sliding_text_layer_animate_down(s_inning_layer);
@@ -389,14 +393,18 @@ static void updateGame(int *instructions){
     sliding_text_layer_animate_down(s_away_data_layer);
   }
   if (instructions[3] == 1){
-    #ifdef PBL_RECT 
-      if(userSettings.bases_display == 1) {
-    #endif
-    snprintf(inning, sizeof(inning), "      %d", currentGameData.inning);
-    #ifdef PBL_RECT 
-      } else if(userSettings.bases_display == 2) {
-        snprintf(inning, sizeof(inning), "%d", currentGameData.inning);
-      }
+    #if defined(PBL_PLATFORM_EMERY)
+      snprintf(inning, sizeof(inning), " %d", currentGameData.inning);
+    #else
+      #ifdef PBL_RECT
+        if(userSettings.bases_display == 1) {
+      #endif
+      snprintf(inning, sizeof(inning), "      %d", currentGameData.inning);
+      #ifdef PBL_RECT
+        } else if(userSettings.bases_display == 2) {
+          snprintf(inning, sizeof(inning), "%d", currentGameData.inning);
+        }
+      #endif
     #endif
     sliding_text_layer_set_next_text(s_inning_layer, inning);
     sliding_text_layer_animate_down(s_inning_layer);
@@ -850,6 +858,13 @@ static void inning_state_update_proc(Layer *layer, GContext *ctx) {
           { .x = ((bounds.size.w / 3) * 2) + 2, .y = ((bounds.size.h / 10) * 6) + 33 },
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 6) + 21 }
         };
+      #elif defined(PBL_PLATFORM_EMERY)
+        GPoint inning_up_arrow[4] = {
+          { .x = ((bounds.size.w / 3) * 2) + 12, .y = ((bounds.size.h / 10) * 7) + 24 },
+          { .x = ((bounds.size.w / 3) * 2) + 5, .y = ((bounds.size.h / 10) * 7) + 36 },
+          { .x = ((bounds.size.w / 3) * 2) + 19, .y = ((bounds.size.h / 10) * 7) + 36 },
+          { .x = ((bounds.size.w / 3) * 2) + 12, .y = ((bounds.size.h / 10) * 7) + 24 }
+        };
       #else
         GPoint inning_up_arrow[4] = {
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 7) + 22 },
@@ -870,6 +885,13 @@ static void inning_state_update_proc(Layer *layer, GContext *ctx) {
           { .x = ((bounds.size.w / 3) * 2) - 12, .y = ((bounds.size.h / 10) * 6) + 21 },
           { .x = ((bounds.size.w / 3) * 2) + 2, .y = ((bounds.size.h / 10) * 6) + 21 },
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 6) + 33 }
+        };
+      #elif defined(PBL_PLATFORM_EMERY)
+        GPoint inning_down_arrow[4] = {
+          { .x = ((bounds.size.w / 3) * 2) + 12, .y = ((bounds.size.h / 10) * 7) + 36 },
+          { .x = ((bounds.size.w / 3) * 2) + 5, .y = ((bounds.size.h / 10) * 7) + 24 },
+          { .x = ((bounds.size.w / 3) * 2) + 19, .y = ((bounds.size.h / 10) * 7) + 24 },
+          { .x = ((bounds.size.w / 3) * 2) + 12, .y = ((bounds.size.h / 10) * 7) + 36 }
         };
       #else
         GPoint inning_down_arrow[4] = {
@@ -1054,7 +1076,7 @@ static void window_load(Window *window) {
     s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 11, 50, 25));
     s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 7) + 2, ((bounds.size.w / 5) * 4) - 0, 30));
     s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 8) + 14, ((bounds.size.w / 5) * 4) - 0, 30));
-    s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 4) * 3), ((bounds.size.h / 10) * 7) + 14, ((bounds.size.w / 5) * 3) - 5, 45));
+    s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 4) * 3) + 6, ((bounds.size.h / 10) * 7) + 14, ((bounds.size.w / 5) * 3) - 5, 45));
     s_loading_layer = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 7) + 14, bounds.size.w, 45));
   #else
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Rectangular Layout");
@@ -1216,7 +1238,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     }
   }
 
-  int use_fast_rate = (currentGameData.status == 2) ||
+  int use_fast_rate = (showing_loading_screen == 1) ||
+                      (currentGameData.status == 2) ||
                       (currentGameData.status == 3 && final_confirm_count < 3) ||
                       use_game_time_fast_rate;
 
@@ -1337,6 +1360,7 @@ void init(void) {
   // Request settings once at startup. The phone JS sends them proactively on
   // its "ready" event, but this covers the race where that message is dropped.
   request_color_update();
+  request_update();
 }
 
 void deinit(void) {

@@ -559,7 +559,10 @@ function storeSettings(configuration){
 // Function to send initial settings/processes to watch and load data
 function initializeData(){
   loadSettings();
-  newGameDataRequest();
+  // Game data is requested by the watch (TYPE=1) after it receives settings.
+  // Calling newGameDataRequest() here races with the settings send: if settings
+  // is still in-flight when game data is sent, sendAppMessage rejects it and
+  // after MAX_SEND_RETRIES the watch is left on the loading screen indefinitely.
 }
 
 // Called when JS is ready
