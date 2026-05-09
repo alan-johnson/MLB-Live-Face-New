@@ -23,6 +23,39 @@ var backgroundColor = "AA0000";
 // var vibrateOnGameEnd
 // var vibrateOnGameStart
 
+// ── Demo / Screenshot Mode ────────────────────────────────────────────────
+// Set DEMO_MODE = true when running in the emulator to capture App Store
+// screenshots.  The watch face will display the fixture game below instead
+// of fetching live data from the MLB API.  Set back to false for production.
+var DEMO_MODE = true;
+
+// Fictional game: CHC (home) vs CIN (away), Top 3rd, Cubs 3 – Reds 1,
+// 1 out, runner on 1st base.
+var DEMO_GAME_DATA = {
+  number_of_games: 1,
+  game_data: [{
+    game_status:          'In Progress',
+    home_team:            'CHC',
+    away_team:            'CIN',
+    home_pitcher:         'Rea',
+    away_pitcher:         'Singer',
+    game_time:            '7:05',
+    game_start_ms:        0,
+    home_tv_broadcast:    'Marquee',
+    home_radio_broadcast: '670 The Score',
+    away_tv_broadcast:    'Bally Ohio',
+    away_radio_broadcast: 'WLW',
+    runners_on_base:      '1:0:0',
+    home_score:           3,
+    away_score:           1,
+    inning:               3,
+    inning_half:          'Top',
+    balls:                0,
+    strikes:              0,
+    outs:                 1
+  }]
+};
+
 // Global Variables
 var offset = 0;
 // Cache of the last successful non-zero game data, keyed by local date string.
@@ -453,6 +486,10 @@ function getGameData(offset){
 
 // Function called to refresh game data
 function newGameDataRequest(){
+  if (DEMO_MODE) {
+    processGameData(DEMO_GAME_DATA, getCurrentDate());
+    return;
+  }
   // Reset retry counter so each scheduled refresh gets a fresh attempt.
   retry = 0;
   reload_timeout = 0;
@@ -485,6 +522,10 @@ function sendSettings(){
 
 // Function to load the stored settings
 function loadSettings(){
+  if (DEMO_MODE) {
+    // Watch uses hardcoded demo data; AppMessage channel is not open in DEMO_MODE.
+    return;
+  }
   var stored = parseInt(localStorage.getItem(1));
   favoriteTeam = isNaN(stored) ? 8 : stored;
 

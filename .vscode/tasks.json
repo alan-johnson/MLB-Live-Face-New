@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Kill Emulator Processes",
+            "type": "shell",
+            "command": "pkill -f 'qemu-pebble' 2>/dev/null; pkill -f 'pypkjs' 2>/dev/null; pkill -f 'websockify' 2>/dev/null; rm -f \"${TMPDIR}pb-emulator.json\" 2>/dev/null; echo 'Emulator processes cleared'",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run on Emulator with Logs",
+            "type": "shell",
+            "command": "pebble install --emulator gabbro --logs",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

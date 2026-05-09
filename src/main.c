@@ -33,6 +33,19 @@ THE SOFTWARE.
 #include <pebble.h>
 #include "sliding-text-layer.h"
 
+// Set to 1 when running in the emulator to capture App Store screenshots.
+// The watch face loads fixture game data directly — no JS / AppMessage needed.
+// Set back to 0 before building for production.
+#define DEMO_MODE 1
+
+// Score format: other platforms use trailing spaces + right-align to park the digit;
+// gabbro uses left-align at the layer x, so just the digit is needed.
+#ifdef PBL_PLATFORM_GABBRO
+  #define SCORE_FMT "%d"
+#else
+  #define SCORE_FMT "%d                     "
+#endif
+
 Window *window;	
 static TextLayer *s_time_layer;	
 static SlidingTextLayer *s_home_team_layer;
@@ -52,8 +65,8 @@ static Layer *s_bso_layer;
 static Layer *s_inning_state_layer;
 static Layer *s_bases_layer;
 static char inning[15];
-static char home_score[25];
-static char away_score[25];
+static char home_score[35];
+static char away_score[35];
 static char s_buffer_prev[8];
 uint32_t logo[33] = {RESOURCE_ID_PHILLIES, RESOURCE_ID_ANGELS, RESOURCE_ID_ASTROS, RESOURCE_ID_ATHLETICS, RESOURCE_ID_BLUEJAYS, RESOURCE_ID_BRAVES, RESOURCE_ID_BREWERS, RESOURCE_ID_CARDINALS, RESOURCE_ID_CUBS, RESOURCE_ID_DIAMONDBACKS, RESOURCE_ID_DODGERS, RESOURCE_ID_GIANTS, RESOURCE_ID_INDIANS, RESOURCE_ID_MARINERS, RESOURCE_ID_MARLINS, RESOURCE_ID_METS, RESOURCE_ID_NATIONALS, RESOURCE_ID_ORIOLES, RESOURCE_ID_PADRES, RESOURCE_ID_PHILLIES, RESOURCE_ID_PIRATES, RESOURCE_ID_RANGERS, RESOURCE_ID_RAYS, RESOURCE_ID_REDSOX, RESOURCE_ID_REDS, RESOURCE_ID_ROCKIES, RESOURCE_ID_ROYALS, RESOURCE_ID_TIGERS, RESOURCE_ID_TWINS, RESOURCE_ID_WHITESOX, RESOURCE_ID_YANKEES, RESOURCE_ID_NL, RESOURCE_ID_AL};
 static int logo_uodate_i = 0;
@@ -265,6 +278,9 @@ static void change_teams(){
 static void schedule_retry();  // forward declaration
 
 static bool request_update(){
+  #if DEMO_MODE
+    return false;
+  #endif
   DictionaryIterator *iter;
   if (app_message_outbox_begin(&iter) != APP_MSG_OK || iter == NULL) {
     schedule_retry();
@@ -279,6 +295,9 @@ static bool request_update(){
 }
 
 static void request_color_update(){
+  #if DEMO_MODE
+    return;
+  #endif
   DictionaryIterator *iter;
   if (app_message_outbox_begin(&iter) != APP_MSG_OK || iter == NULL) {
     return;  // Settings will arrive proactively from JS 'ready'; no retry needed.
@@ -304,12 +323,14 @@ static void startGame(){
   // Set Teams
   change_teams();
   // Animate Scores
+  #ifndef PBL_PLATFORM_GABBRO
   sliding_text_layer_set_text_alignment(s_away_data_layer, GTextAlignmentRight);
   sliding_text_layer_set_text_alignment(s_home_data_layer, GTextAlignmentRight);
-  snprintf(away_score, sizeof(away_score), "%d                     ", currentGameData.away_score);
+  #endif
+  snprintf(away_score, sizeof(away_score), SCORE_FMT, currentGameData.away_score);
   sliding_text_layer_set_next_text(s_away_data_layer, away_score);
   sliding_text_layer_animate_down(s_away_data_layer);
-  snprintf(home_score, sizeof(home_score), "%d                     ", currentGameData.home_score);
+  snprintf(home_score, sizeof(home_score), SCORE_FMT, currentGameData.home_score);
   sliding_text_layer_set_next_text(s_home_data_layer, home_score);
   sliding_text_layer_animate_down(s_home_data_layer);
   // Animate Inning
@@ -342,12 +363,14 @@ static void endGame(){
   // Set Teams
   change_teams();
   // Set Scores
+  #ifndef PBL_PLATFORM_GABBRO
   sliding_text_layer_set_text_alignment(s_away_data_layer, GTextAlignmentRight);
   sliding_text_layer_set_text_alignment(s_home_data_layer, GTextAlignmentRight);
-  snprintf(away_score, sizeof(away_score), "%d                     ", currentGameData.away_score);
+  #endif
+  snprintf(away_score, sizeof(away_score), SCORE_FMT, currentGameData.away_score);
   sliding_text_layer_set_next_text(s_away_data_layer, away_score);
   sliding_text_layer_animate_down(s_away_data_layer);
-  snprintf(home_score, sizeof(home_score), "%d                     ", currentGameData.home_score);
+  snprintf(home_score, sizeof(home_score), SCORE_FMT, currentGameData.home_score);
   sliding_text_layer_set_next_text(s_home_data_layer, home_score);
   sliding_text_layer_animate_down(s_home_data_layer);
   // Animate Inning to "Final"
@@ -383,12 +406,12 @@ static void updateGame(int *instructions){
     update_bases();
   }
   if (instructions[1] == 1){
-    snprintf(home_score, sizeof(home_score), "%d                     ", currentGameData.home_score);
+    snprintf(home_score, sizeof(home_score), SCORE_FMT, currentGameData.home_score);
     sliding_text_layer_set_next_text(s_home_data_layer, home_score);
     sliding_text_layer_animate_down(s_home_data_layer);
   }
   if (instructions[2] == 1){
-    snprintf(away_score, sizeof(away_score), "%d                     ", currentGameData.away_score);
+    snprintf(away_score, sizeof(away_score), SCORE_FMT, currentGameData.away_score);
     sliding_text_layer_set_next_text(s_away_data_layer, away_score);
     sliding_text_layer_animate_down(s_away_data_layer);
   }
@@ -852,12 +875,21 @@ static void inning_state_update_proc(Layer *layer, GContext *ctx) {
     #endif
     if ((strcmp(currentGameData.inning_half, "Top") == 0) || (strcmp(currentGameData.inning_half, "Middle") == 0)) {
       #ifdef PBL_ROUND
+        #ifdef PBL_PLATFORM_GABBRO
+        GPoint inning_up_arrow[4] = {
+          { .x = ((bounds.size.w / 3) * 2) - 7,  .y = ((bounds.size.h / 10) * 6) + 30 },
+          { .x = ((bounds.size.w / 3) * 2) - 17, .y = ((bounds.size.h / 10) * 6) + 48 },
+          { .x = ((bounds.size.w / 3) * 2) + 3,  .y = ((bounds.size.h / 10) * 6) + 48 },
+          { .x = ((bounds.size.w / 3) * 2) - 7,  .y = ((bounds.size.h / 10) * 6) + 30 }
+        };
+        #else
         GPoint inning_up_arrow[4] = {
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 6) + 21 },
           { .x = ((bounds.size.w / 3) * 2) - 12, .y = ((bounds.size.h / 10) * 6) + 33 },
           { .x = ((bounds.size.w / 3) * 2) + 2, .y = ((bounds.size.h / 10) * 6) + 33 },
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 6) + 21 }
         };
+        #endif
       #elif defined(PBL_PLATFORM_EMERY)
         GPoint inning_up_arrow[4] = {
           { .x = ((bounds.size.w / 3) * 2) + 12, .y = ((bounds.size.h / 10) * 7) + 24 },
@@ -880,12 +912,21 @@ static void inning_state_update_proc(Layer *layer, GContext *ctx) {
       gpath_destroy(inning_up_arrow_path);
     } else if ((strcmp(currentGameData.inning_half, "Bottom") == 0) || (strcmp(currentGameData.inning_half, "End") == 0)) {
       #ifdef PBL_ROUND
+        #ifdef PBL_PLATFORM_GABBRO
+        GPoint inning_down_arrow[4] = {
+          { .x = ((bounds.size.w / 3) * 2) - 7,  .y = ((bounds.size.h / 10) * 6) + 48 },
+          { .x = ((bounds.size.w / 3) * 2) - 17, .y = ((bounds.size.h / 10) * 6) + 30 },
+          { .x = ((bounds.size.w / 3) * 2) + 3,  .y = ((bounds.size.h / 10) * 6) + 30 },
+          { .x = ((bounds.size.w / 3) * 2) - 7,  .y = ((bounds.size.h / 10) * 6) + 48 }
+        };
+        #else
         GPoint inning_down_arrow[4] = {
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 6) + 33 },
           { .x = ((bounds.size.w / 3) * 2) - 12, .y = ((bounds.size.h / 10) * 6) + 21 },
           { .x = ((bounds.size.w / 3) * 2) + 2, .y = ((bounds.size.h / 10) * 6) + 21 },
           { .x = ((bounds.size.w / 3) * 2) - 5, .y = ((bounds.size.h / 10) * 6) + 33 }
         };
+        #endif
       #elif defined(PBL_PLATFORM_EMERY)
         GPoint inning_down_arrow[4] = {
           { .x = ((bounds.size.w / 3) * 2) + 12, .y = ((bounds.size.h / 10) * 7) + 36 },
@@ -1061,14 +1102,25 @@ static void window_load(Window *window) {
   // Create the TextLayer with specific bounds
   s_time_layer = text_layer_create(GRect(0, ((bounds.size.h / 10) * 4) - 6, bounds.size.w, 54));
   #ifdef PBL_ROUND
+    #ifdef PBL_PLATFORM_GABBRO
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Gabbro Layout");
+    s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 5), ((bounds.size.h / 10) * 6) + 7, 72, 36));
+    s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 5), ((bounds.size.h / 10) * 7) + 13, 72, 36));
+    s_game_time_layer = sliding_text_layer_create(GRect((bounds.size.w / 5) * 2, ((bounds.size.h / 10) * 8) + 16, 72, 36));
+    s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 2) + 7, ((bounds.size.h / 10) * 6) + 7, ((bounds.size.w / 5) * 3) - 7, 36));
+    s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 2) + 7, ((bounds.size.h / 10) * 7) + 12, ((bounds.size.w / 5) * 3) - 7, 36));
+    s_inning_layer    = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 3) + 6, ((bounds.size.h / 10) * 6) + 22, ((bounds.size.w / 5) * 3) - 7, 65));
+    s_loading_layer   = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 6) + 22, bounds.size.w, 65));
+    #else
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Round Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 5), ((bounds.size.h / 10) * 6) + 5, 50, 25));
     s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 5), ((bounds.size.h / 10) * 7) + 9, 50, 25));
     s_game_time_layer = sliding_text_layer_create(GRect((bounds.size.w / 5) * 2, ((bounds.size.h / 10) * 8) + 11, 50, 25));
     s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 2) + 5, ((bounds.size.h / 10) * 6) + 5, ((bounds.size.w / 5) * 3) - 5, 25));
     s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 2) + 5, ((bounds.size.h / 10) * 7) + 8, ((bounds.size.w / 5) * 3) - 5, 25));
-    s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 3), ((bounds.size.h / 10) * 6) + 15, ((bounds.size.w / 5) * 3) - 5, 45));
-    s_loading_layer = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 6) + 15, bounds.size.w, 45));
+    s_inning_layer    = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 3), ((bounds.size.h / 10) * 6) + 15, ((bounds.size.w / 5) * 3) - 5, 45));
+    s_loading_layer   = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 6) + 15, bounds.size.w, 45));
+    #endif
   #elif PBL_PLATFORM_EMERY
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Time 2.0 Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 7) + 2, 50, 25));
@@ -1137,8 +1189,10 @@ static void window_load(Window *window) {
   sliding_text_layer_set_text_alignment(s_inning_layer, GTextAlignmentLeft);
   
   sliding_text_layer_set_text_color(s_loading_layer, userSettings.primary_color);
+  #if !DEMO_MODE
   sliding_text_layer_set_next_text(s_loading_layer, "LOADING");
   sliding_text_layer_animate_down(s_loading_layer);
+  #endif
   sliding_text_layer_set_font(s_loading_layer, s_font_capital_20);
   sliding_text_layer_set_text_alignment(s_loading_layer, GTextAlignmentCenter);
   
@@ -1323,6 +1377,44 @@ static void bluetooth_callback(bool connected) {
   }
 }
 
+#if DEMO_MODE
+// Fictional game used for emulator screenshots: CIN (away) @ CHC (home),
+// Top of 3rd, Cubs 3 – Reds 1, 1 out, runner on 1st.
+static void load_demo_data(void) {
+  userSettings.favorite_team = 8;  // CHC (index 8 in teams[])
+  #ifdef PBL_COLOR
+    userSettings.background_color = GColorFromHEX(0x000055);  // Cubs navy
+    userSettings.primary_color    = GColorWhite;
+    userSettings.secondary_color  = GColorWhite;
+  #else
+    userSettings.background_color = GColorBlack;
+    userSettings.primary_color    = GColorWhite;
+    userSettings.secondary_color  = GColorWhite;
+  #endif
+
+  strcpy(currentGameData.home_team,      "CHC");
+  strcpy(currentGameData.away_team,      "CIN");
+  currentGameData.num_games  = 1;
+  currentGameData.status     = 2;   // In Progress
+  currentGameData.home_score = 3;
+  currentGameData.away_score = 1;
+  currentGameData.inning     = 3;
+  strcpy(currentGameData.inning_half,    "Top");
+  currentGameData.first      = 1;
+  currentGameData.second     = 0;
+  currentGameData.third      = 0;
+  currentGameData.balls      = 0;
+  currentGameData.strikes    = 0;
+  currentGameData.outs       = 1;
+  strcpy(currentGameData.home_pitcher,   "Rea");
+  strcpy(currentGameData.away_pitcher,   "Singer");
+  strcpy(currentGameData.game_time,      "7:05");
+  strcpy(currentGameData.home_broadcast, "Marquee");
+  strcpy(currentGameData.away_broadcast, "Bally Ohio");
+  showing_loading_screen = 0;
+}
+#endif
+
 void init(void) {
   // Populate the initial settings for loading
   initialize_settings();
@@ -1337,23 +1429,27 @@ void init(void) {
   time_t now = time(NULL);
   update_time(localtime(&now));
 
-  // Register with TickTimerService — MINUTE_UNIT fires once per minute,
-  // which is sufficient since the time display only changes every minute.
-  // The broadcast-revert countdown uses a one-shot AppTimer instead.
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   accel_tap_service_subscribe(accel_tap_handler);
+
+#if DEMO_MODE
+  // Demo mode: populate fixture data and render directly — no JS connection.
+  load_demo_data();
+  change_colors();
+  startGame();
+#else
   bluetooth_connection_service_subscribe(bluetooth_callback);
   if (!bluetooth_connection_service_peek()) {
     bluetooth_callback(false);
   }
-  
-    // Register AppMessage handlers
-    app_message_register_inbox_received(in_received_handler); 
-    app_message_register_inbox_dropped(in_dropped_handler); 
-    app_message_register_outbox_failed(out_failed_handler);
-	
+
+  // Register AppMessage handlers
+  app_message_register_inbox_received(in_received_handler);
+  app_message_register_inbox_dropped(in_dropped_handler);
+  app_message_register_outbox_failed(out_failed_handler);
+
   #ifdef PBL_COLOR
-	  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   #else
     app_message_open(300, 50);
   #endif
@@ -1361,6 +1457,7 @@ void init(void) {
   // its "ready" event, but this covers the race where that message is dropped.
   request_color_update();
   request_update();
+#endif
 }
 
 void deinit(void) {

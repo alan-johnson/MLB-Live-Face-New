@@ -9,7 +9,7 @@
         "capabilities": [
             "configurable"
         ],
-        "displayName": "MLB Live Face",
+        "displayName": "MLB Live Face 2",
         "enableMultiJS": true,
         "messageKeys": {
             "AWAY_BROADCAST": 9,
