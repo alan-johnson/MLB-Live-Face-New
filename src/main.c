@@ -36,7 +36,7 @@ THE SOFTWARE.
 // Set to 1 when running in the emulator to capture App Store screenshots.
 // The watch face loads fixture game data directly — no JS / AppMessage needed.
 // Set back to 0 before building for production.
-#define DEMO_MODE 1
+#define DEMO_MODE 0
 
 // Score format: other platforms use trailing spaces + right-align to park the digit;
 // gabbro uses left-align at the layer x, so just the digit is needed.

@@ -27,7 +27,7 @@ var backgroundColor = "AA0000";
 // Set DEMO_MODE = true when running in the emulator to capture App Store
 // screenshots.  The watch face will display the fixture game below instead
 // of fetching live data from the MLB API.  Set back to false for production.
-var DEMO_MODE = true;
+var DEMO_MODE = false;
 
 // Fictional game: CHC (home) vs CIN (away), Top 3rd, Cubs 3 – Reds 1,
 // 1 out, runner on 1st base.
